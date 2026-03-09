@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — FormSolver</title>
+<link rel="icon" type="image/svg+xml" href="favicon-settings.svg">
+<link rel="stylesheet" href="style.css">
+<style>
+.settings-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-title); font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gleipnir-dim); border: 1px solid rgba(58,122,120,0.4);
+  background: rgba(58,122,120,0.07); padding: 5px 14px; border-radius: 2px; margin-bottom: 8px;
+}
+.group-title {
+  font-family: var(--font-title); font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gleipnir-dim); margin-bottom: 14px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;
+}
+.group-title .rune { font-size: 16px; }
+
+/* Toggle */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid rgba(46,37,64,0.5);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-info { flex: 1; padding-right: 20px; }
+.toggle-label { font-family: var(--font-title); font-size: 12px; letter-spacing: 0.5px; color: var(--parchment); }
+.toggle-desc  { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px; }
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: var(--border); border-radius: 11px;
+  cursor: pointer; transition: background 0.3s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px;
+  background: var(--muted); border-radius: 50%; transition: transform 0.3s, background 0.3s;
+}
+.toggle input:checked + .toggle-slider { background: rgba(58,122,120,0.4); border: 1px solid var(--gleipnir-dim); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--gleipnir); box-shadow: 0 0 8px rgba(141,212,208,0.5); }
+
+/* Model cards */
+.model-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.model-card {
+  background: var(--deep); border: 1px solid var(--border); border-radius: 2px;
+  padding: 12px 16px; cursor: pointer; transition: all 0.25s; user-select: none;
+}
+.model-card:hover { border-color: var(--gleipnir-dim); }
+.model-card.selected { border-color: var(--gleipnir); background: rgba(141,212,208,0.06); box-shadow: 0 0 14px rgba(141,212,208,0.08); }
+.model-name { font-family: var(--font-title); font-size: 12px; color: var(--parchment); margin-bottom: 3px; }
+.model-card.selected .model-name { color: var(--gleipnir); }
+.model-desc { font-size: 12px; color: var(--muted); font-style: italic; }
+
+/* Proxy status */
+.proxy-status { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-title); font-size: 10px; letter-spacing: 1px; color: var(--muted); margin-top: 8px; text-transform: uppercase; }
+.proxy-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.proxy-dot.ok   { background: var(--gleipnir); box-shadow: 0 0 6px var(--gleipnir); }
+.proxy-dot.fail { background: var(--ember); box-shadow: 0 0 6px var(--ember); }
+
+/* Danger zone */
+.danger-zone { background: rgba(122,30,30,0.06); border: 1px solid rgba(122,30,30,0.25); border-radius: 3px; padding: 20px 24px; }
+.danger-title { font-family: var(--font-title); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #c46060; margin-bottom: 14px; }
+.btn-danger {
+  background: transparent; color: #c46060; border: 1px solid rgba(122,30,30,0.5);
+  font-family: var(--font-title); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 9px 20px; cursor: pointer; border-radius: 2px; transition: all 0.2s; margin-right: 8px; margin-bottom: 8px;
+}
+.btn-danger:hover { background: rgba(122,30,30,0.15); border-color: #c46060; }
+
+/* Save banner */
+.save-banner {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--deep); border: 1px solid var(--gleipnir-dim); border-radius: 3px;
+  padding: 12px 28px; font-family: var(--font-title); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--gleipnir); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  transition: transform 0.4s ease; z-index: 100; white-space: nowrap;
+}
+.save-banner.show { transform: translateX(-50%) translateY(0); }
+
+/* Proxy tip box */
+.tip-box {
+  background: rgba(42,30,90,0.25); border: 1px solid rgba(80,60,140,0.3);
+  border-radius: 2px; padding: 14px 18px; margin-top: 14px;
+  font-size: 13px; color: var(--muted); line-height: 1.7;
+}
+.tip-box code {
+  background: var(--deep); border: 1px solid var(--border); padding: 1px 7px;
+  border-radius: 2px; font-size: 12px; color: var(--gleipnir-dim); font-family: monospace;
+}
+.tip-box strong { color: var(--parchment); font-family: var(--font-title); font-size: 11px; letter-spacing: 1px; }
+
+/* Stats */
+.stat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+.stat-card { background: var(--deep); border: 1px solid var(--border); border-radius: 2px; padding: 14px 16px; text-align: center; }
+.stat-val { font-family: var(--font-display); font-size: 22px; color: var(--chain); display: block; margin-bottom: 4px; }
+.stat-label { font-family: var(--font-title); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+
+/* Cost row */
+.cost-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.cost-card {
+  background: var(--deep); border: 1px solid var(--border); border-radius: 2px;
+  padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+}
+.cost-card.spent   { border-color: rgba(200,168,75,0.25); }
+.cost-card.balance { border-color: rgba(58,122,120,0.25); }
+.cost-icon { font-size: 22px; flex-shrink: 0; }
+.cost-info { flex: 1; }
+.cost-val { font-family: var(--font-display); font-size: 18px; display: block; margin-bottom: 3px; }
+.cost-card.spent   .cost-val { color: var(--chain); }
+.cost-card.balance .cost-val { color: var(--gleipnir); }
+.cost-label { font-family: var(--font-title); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.cost-sub   { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 3px; }
+.cost-link  { font-family: var(--font-title); font-size: 9px; letter-spacing: 1px; color: var(--gleipnir-dim); text-decoration: none; border-bottom: 1px dotted var(--gleipnir-dim); }
+.cost-link:hover { color: var(--gleipnir); }
+.token-detail { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: var(--font-title); letter-spacing: 0.5px; }
+
+/* Glow bg */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 50% -10%, rgba(42,30,90,0.2) 0%, transparent 65%),
+              radial-gradient(ellipse 40% 30% at 90% 90%, rgba(58,122,120,0.08) 0%, transparent 55%);
+}
+
+@media (max-width: 600px) { .model-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header style="padding-top:44px; padding-bottom:24px;">
+    <a href="index.html" class="back-link">메인으로</a>
+    <div class="settings-badge">Binding Chamber</div>
+    <div class="site-title">Site <span class="accent-g">Config</span></div>
+    <p class="site-subtitle">API 키, 모델, 개인정보, 프록시를 설정합니다.</p>
+  </header>
+
+  <div class="chain-divider"><span>ᛟ</span></div>
+
+  <!-- Cost cards -->
+  <div class="cost-row">
+    <div class="cost-card spent">
+      <span class="cost-icon">🔗</span>
+      <div class="cost-info">
+        <span class="cost-val" id="cost-spent">$0.000</span>
+        <span class="cost-label">이번 기기 사용 금액</span>
+        <div class="token-detail" id="token-detail">입력 0 · 출력 0 tokens</div>
+      </div>
+    </div>
+    <div class="cost-card balance">
+      <span class="cost-icon">💎</span>
+      <div class="cost-info">
+        <span class="cost-val">—</span>
+        <span class="cost-label">잔여 크레딧</span>
+        <div class="cost-sub">
+          <a href="https://console.anthropic.com/settings/billing" target="_blank" class="cost-link">콘솔에서 확인 →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usage stats -->
+  <div class="stat-row" id="statRow">
+    <div class="stat-card"><span class="stat-val" id="stat-uses">0</span><span class="stat-label">총 호출 횟수</span></div>
+    <div class="stat-card"><span class="stat-val" id="stat-forms">0</span><span class="stat-label">분석한 문서</span></div>
+  </div>
+
+  <!-- API & Model -->
+  <div class="step-card active">
+    <div class="group-title"><span class="rune">ᚠ</span> API 및 모델</div>
+
+    <div class="input-group">
+      <label>Anthropic API 키</label>
+      <input type="password" id="s_apiKey" placeholder="sk-ant-api03-..." autocomplete="off">
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="toggle-label">API 키 저장</div>
+        <div class="toggle-desc">브라우저 localStorage에 저장합니다. 공용 기기에서는 비활성화하세요.</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="s_saveApiKey"><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="input-group" style="margin-top:18px;">
+      <label>Claude 모델</label>
+      <div class="model-grid" id="modelGrid">
+        <div class="model-card selected" data-model="claude-sonnet-4-20250514" onclick="selectModel(this)">
+          <div class="model-name">Claude Sonnet 4</div>
+          <div class="model-desc">균형잡힌 성능 (권장)</div>
+        </div>
+        <div class="model-card" data-model="claude-opus-4-6" onclick="selectModel(this)">
+          <div class="model-name">Claude Opus 4</div>
+          <div class="model-desc">최고 성능, 높은 비용</div>
+        </div>
+        <div class="model-card" data-model="claude-haiku-4-5-20251001" onclick="selectModel(this)">
+          <div class="model-name">Claude Haiku</div>
+          <div class="model-desc">빠르고 저렴</div>
+        </div>
+        <div class="model-card" data-model="custom" onclick="selectModel(this)">
+          <div class="model-name">커스텀</div>
+          <div class="model-desc">직접 입력</div>
+        </div>
+      </div>
+      <div id="customModelWrap" class="hidden" style="margin-top:8px;">
+        <input type="text" id="s_customModel" placeholder="모델명 직접 입력">
+      </div>
+    </div>
+
+    <div class="input-group" style="margin-top:14px;">
+      <label>Max Tokens</label>
+      <input type="number" id="s_maxTokens" value="4000" min="500" max="8000" step="500">
+    </div>
+  </div>
+
+  <!-- Personal Info -->
+  <div class="step-card">
+    <div class="group-title"><span class="rune">ᚢ</span> 기본 개인정보</div>
+    <p style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:16px;">폼의 개인정보 필드에 자동으로 채워집니다.</p>
+    <div class="input-row">
+      <div class="input-group"><label>이름</label><input type="text" id="s_name" placeholder="홍길동"></div>
+      <div class="input-group"><label>학번 / 사번</label><input type="text" id="s_id" placeholder="20230001"></div>
+    </div>
+    <div class="input-row">
+      <div class="input-group"><label>학교 / 소속</label><input type="text" id="s_org" placeholder="○○대학교"></div>
+      <div class="input-group"><label>학과 / 부서</label><input type="text" id="s_dept" placeholder="컴퓨터공학과"></div>
+    </div>
+    <div class="input-row">
+      <div class="input-group"><label>이메일</label><input type="email" id="s_email" placeholder="example@email.com"></div>
+      <div class="input-group"><label>전화번호</label><input type="text" id="s_phone" placeholder="010-0000-0000"></div>
+    </div>
+    <div class="input-group">
+      <label>추가 정보</label>
+      <textarea id="s_extra" rows="2" placeholder="학년, 반, 기타 반복적으로 쓰는 정보"></textarea>
+    </div>
+  </div>
+
+  <!-- Behavior -->
+  <div class="step-card">
+    <div class="group-title"><span class="rune">ᚦ</span> 답변 설정</div>
+
+    <div class="input-group">
+      <label>기본 컨텍스트</label>
+      <textarea id="s_defaultContext" rows="2" placeholder="항상 적용할 지침 (예: 한국어로 답변, 정확한 정답 선택 등)"></textarea>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="toggle-label">답변 근거 표시</div>
+        <div class="toggle-desc">AI가 정답 옆에 짧은 근거를 추가합니다.</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="s_includeReason" checked><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <!-- CORS Proxy -->
+  <div class="step-card">
+    <div class="group-title"><span class="rune">ᚱ</span> CORS 프록시</div>
+
+    <div class="input-group">
+      <label>프록시 URL</label>
+      <input type="url" id="s_proxyUrl" placeholder="https://your-worker.workers.dev/?url=">
+      <div class="proxy-status">
+        <div class="proxy-dot" id="proxyDot"></div>
+        <span id="proxyStatusText">미설정</span>
+      </div>
+    </div>
+
+    <div class="actions-row" style="margin-top:4px;">
+      <button class="btn btn-ghost" onclick="testProxy()" style="font-size:11px;padding:8px 14px;">프록시 테스트</button>
+      <button class="btn btn-ghost" onclick="resetProxy()" style="font-size:11px;padding:8px 14px;">기본값</button>
+    </div>
+
+    <div class="tip-box">
+      <strong>Cloudflare Worker 권장</strong> — 가장 안정적입니다.<br><br>
+      1. <a href="https://workers.cloudflare.com" target="_blank" style="color:var(--gleipnir-dim);">workers.cloudflare.com</a> 무료 가입<br>
+      2. Create Worker → 아래 코드 붙여넣기 → Deploy<br>
+      3. 발급된 주소 <code>https://xxxx.workers.dev/?url=</code> 여기 입력<br><br>
+      <strong>Worker 코드:</strong><br>
+      <code style="display:block;margin-top:6px;padding:10px;white-space:pre-wrap;word-break:break-all;">export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const target = url.searchParams.get('url');
+    if (!target) return new Response('url required', { status: 400 });
+    const res = await fetch(decodeURIComponent(target), {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    return new Response(await res.text(), {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+      }
+    });
+  }
+}</code>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="danger-zone">
+    <div class="danger-title">⚠ 위험 구역</div>
+    <button class="btn-danger" onclick="clearPersonal()">개인정보 초기화</button>
+    <button class="btn-danger" onclick="clearStats()">통계 초기화</button>
+    <button class="btn-danger" onclick="clearAll()">모든 데이터 삭제</button>
+  </div>
+
+  <div class="actions-row" style="margin-top:24px; margin-bottom:60px;">
+    <button class="btn btn-gleipnir" onclick="save()">ᚠ &nbsp;저장</button>
+    <button class="btn btn-ghost"    onclick="location.href='index.html'">메인으로</button>
+  </div>
+</div>
+
+<div class="save-banner" id="saveBanner">ᚠ 설정이 저장되었습니다</div>
+
+<footer>
+  <p class="footer-text">Binding Chamber — Site Configuration</p>
+  <div class="secret-runes">
+    <a href="fenrir.html"   class="secret-rune" tabindex="-1" aria-hidden="true">ᚠ</a>
+    <a href="projects.html" class="secret-rune" tabindex="-1" aria-hidden="true">ᚦ</a>
+    <a href="settings.html" class="secret-rune" tabindex="-1" aria-hidden="true">ᚢ</a>
+  </div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+const KEY = 'formsolver_settings';
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadSettings(); loadStats();
+});
+
+function loadSettings() {
+  const raw = localStorage.getItem(KEY);
+  if (!raw) return;
+  const s = JSON.parse(raw);
+
+  if (s.saveApiKey && s.apiKey) { document.getElementById('s_apiKey').value = s.apiKey; document.getElementById('s_saveApiKey').checked = true; }
+
+  if (s.model) {
+    const card = document.querySelector(`[data-model="${s.model}"]`);
+    if (card) selectModel(card);
+    else { selectModel(document.querySelector('[data-model="custom"]')); document.getElementById('s_customModel').value = s.model; }
+  }
+  if (s.maxTokens) document.getElementById('s_maxTokens').value = s.maxTokens;
+  ['name','id','org','dept','email','phone','extra'].forEach(k => { if (s[k] !== undefined) document.getElementById('s_'+k).value = s[k]; });
+  if (s.defaultContext) document.getElementById('s_defaultContext').value = s.defaultContext;
+  if (s.includeReason  !== undefined) document.getElementById('s_includeReason').checked = s.includeReason;
+  if (s.proxyUrl) { document.getElementById('s_proxyUrl').value = s.proxyUrl; updateProxyStatus('ok','저장됨'); }
+}
+
+function loadStats() {
+  const raw = localStorage.getItem('formsolver_stats');
+  const s = raw ? JSON.parse(raw) : {};
+
+  document.getElementById('stat-uses').textContent  = s.uses  || 0;
+  document.getElementById('stat-forms').textContent = (s.docs || s.forms) || 0;
+
+  // Cost
+  const cost = s.costUsd || 0;
+  document.getElementById('cost-spent').textContent =
+    cost < 0.001 ? '$0.000' : '$' + cost.toFixed(4);
+
+  // Token detail
+  const inp = s.inputTokens  || 0;
+  const out = s.outputTokens || 0;
+  const fmtTok = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
+  document.getElementById('token-detail').textContent =
+    `입력 ${fmtTok(inp)} · 출력 ${fmtTok(out)} tokens`;
+}
+
+function save() {
+  const selectedModel = document.querySelector('.model-card.selected')?.dataset.model;
+  const finalModel = selectedModel === 'custom' ? document.getElementById('s_customModel').value.trim() : selectedModel;
+  const saveApiKey = document.getElementById('s_saveApiKey').checked;
+
+  const s = {
+    saveApiKey,
+    apiKey:         saveApiKey ? document.getElementById('s_apiKey').value.trim() : '',
+    model:          finalModel || 'claude-sonnet-4-20250514',
+    maxTokens:      parseInt(document.getElementById('s_maxTokens').value) || 4000,
+    name:           document.getElementById('s_name').value.trim(),
+    id:             document.getElementById('s_id').value.trim(),
+    org:            document.getElementById('s_org').value.trim(),
+    dept:           document.getElementById('s_dept').value.trim(),
+    email:          document.getElementById('s_email').value.trim(),
+    phone:          document.getElementById('s_phone').value.trim(),
+    extra:          document.getElementById('s_extra').value.trim(),
+    defaultContext: document.getElementById('s_defaultContext').value.trim(),
+    includeReason:  document.getElementById('s_includeReason').checked,
+    proxyUrl:       document.getElementById('s_proxyUrl').value.trim(),
+  };
+  localStorage.setItem(KEY, JSON.stringify(s));
+  showBanner('설정이 저장되었습니다');
+}
+
+function selectModel(card) {
+  document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  document.getElementById('customModelWrap').classList.toggle('hidden', card.dataset.model !== 'custom');
+}
+
+async function testProxy() {
+  const url = document.getElementById('s_proxyUrl').value.trim();
+  if (!url) { updateProxyStatus('fail','URL 없음'); return; }
+  updateProxyStatus('','테스트 중...');
+  try {
+    const res = await fetch(url + encodeURIComponent('https://www.google.com'), { signal: AbortSignal.timeout(6000) });
+    if (res.ok) updateProxyStatus('ok','연결 성공'); else updateProxyStatus('fail','HTTP '+res.status);
+  } catch { updateProxyStatus('fail','연결 실패'); }
+}
+
+function updateProxyStatus(type, msg) {
+  document.getElementById('proxyDot').className = 'proxy-dot' + (type ? ' '+type : '');
+  document.getElementById('proxyStatusText').textContent = msg;
+}
+
+function resetProxy() { document.getElementById('s_proxyUrl').value = 'https://api.allorigins.win/get?url='; updateProxyStatus('','기본값 적용'); }
+
+function clearPersonal() {
+  if (!confirm('개인정보를 삭제할까요?')) return;
+  ['s_name','s_id','s_org','s_dept','s_email','s_phone','s_extra'].forEach(id => document.getElementById(id).value = '');
+  showBanner('개인정보 삭제됨');
+}
+function clearStats() {
+  if (!confirm('통계를 초기화할까요?')) return;
+  localStorage.removeItem('formsolver_stats'); loadStats(); showBanner('통계 초기화됨');
+}
+function clearAll() {
+  if (!confirm('모든 데이터를 삭제할까요?')) return;
+  localStorage.removeItem(KEY); localStorage.removeItem('formsolver_stats'); location.reload();
+}
+
+function showBanner(msg) {
+  const b = document.getElementById('saveBanner');
+  b.textContent = 'ᚠ ' + msg;
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

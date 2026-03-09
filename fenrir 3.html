@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fenrir — Form Preview</title>
+<link rel="icon" type="image/svg+xml" href="favicon-fenrir.svg">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ── Wolf / Blood Moon background ── */
+.wolf-bg { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.wolf-bg svg { width:100%; height:100%; }
+.wolf-overlay {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(ellipse 85% 85% at 50% 50%, rgba(7,6,10,0.8) 15%, transparent 100%),
+    radial-gradient(ellipse 100% 35% at 50% 0%,   var(--bg) 0%, transparent 80%),
+    radial-gradient(ellipse 100% 35% at 50% 100%, var(--bg) 0%, transparent 80%),
+    radial-gradient(ellipse 35% 100% at 0% 50%,   var(--bg) 0%, transparent 70%),
+    radial-gradient(ellipse 35% 100% at 100% 50%, var(--bg) 0%, transparent 70%);
+}
+.wolf-glow {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 18%, rgba(122,30,30,0.13) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 30% at 80% 70%, rgba(200,168,75,0.05) 0%, transparent 60%);
+}
+
+.fenrir-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--font-title); font-size:10px; letter-spacing:3px; text-transform:uppercase;
+  color:#c46060; border:1px solid rgba(122,30,30,0.45); background:rgba(122,30,30,0.08);
+  padding:5px 14px; border-radius:2px; margin-bottom:8px;
+}
+
+/* ── Tab row ── */
+.view-tab-row { display:flex; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.view-tab {
+  font-family:var(--font-title); font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  padding:10px 20px; background:transparent; border:none; color:var(--muted);
+  cursor:pointer; transition:all 0.2s; border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.view-tab.active { color:var(--chain); border-bottom-color:var(--chain); }
+.view-tab:hover  { color:var(--chain-dim); }
+
+/* ── Completed form shell ── */
+.form-shell { background:var(--surface); border:1px solid var(--border); border-radius:3px; overflow:hidden; margin-bottom:16px; }
+.form-shell-header { background:linear-gradient(135deg,#1a1020,#0e1a18); border-bottom:3px solid var(--chain-dim); padding:20px 28px; }
+.form-shell-title { font-family:var(--font-display); font-size:20px; color:var(--chain); text-shadow:0 0 20px rgba(200,168,75,0.2); margin-bottom:6px; }
+.form-shell-desc  { font-size:13px; color:var(--muted); font-style:italic; line-height:1.5; }
+
+/* ── Question blocks ── */
+.fq-block {
+  padding:20px 28px; border-bottom:1px solid rgba(46,37,64,0.6);
+  animation:bind-in 0.35s ease forwards; opacity:0;
+}
+.fq-block:last-child { border-bottom:none; }
+.fq-block.is-personal { border-left:2px solid rgba(122,30,30,0.5); background:rgba(122,30,30,0.025); }
+.fq-block.is-answer   { border-left:2px solid rgba(200,168,75,0.3); }
+
+.fq-title {
+  font-family:var(--font-body); font-size:15px; font-weight:600;
+  color:var(--parchment); line-height:1.4; margin-bottom:4px;
+  display:flex; align-items:flex-start; gap:8px;
+}
+.fq-required { color:#c46060; font-size:14px; flex-shrink:0; }
+.fq-desc { font-size:13px; color:var(--muted); font-style:italic; margin-bottom:10px; line-height:1.5; }
+
+/* Filled text */
+.fq-text {
+  width:100%; background:rgba(200,168,75,0.04); border:none;
+  border-bottom:2px solid var(--chain-dim); padding:7px 0 5px;
+  color:var(--parchment); font-family:var(--font-body); font-size:15px;
+  outline:none; pointer-events:none; line-height:1.5;
+}
+.fq-text.personal { border-bottom-color:rgba(122,30,30,0.6); color:#e8b0b0; }
+.fq-textarea {
+  width:100%; background:rgba(200,168,75,0.04); border:none;
+  border-bottom:2px solid var(--chain-dim); padding:7px 0 5px;
+  color:var(--parchment); font-family:var(--font-body); font-size:15px;
+  outline:none; pointer-events:none; resize:none; line-height:1.6; overflow:hidden; min-height:60px;
+}
+
+/* Options */
+.fq-options { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.fq-option {
+  display:flex; align-items:center; gap:12px;
+  font-family:var(--font-body); font-size:14px; color:var(--muted); padding:4px 0;
+}
+.fq-option.chosen { color:var(--parchment); }
+
+.fq-radio { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); background:var(--deep); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.fq-option.chosen .fq-radio { border-color:var(--chain); background:rgba(200,168,75,0.1); }
+.fq-radio-dot { width:8px; height:8px; border-radius:50%; background:var(--chain); display:none; box-shadow:0 0 6px rgba(200,168,75,0.5); }
+.fq-option.chosen .fq-radio-dot { display:block; }
+
+.fq-check { width:16px; height:16px; border-radius:2px; border:2px solid var(--border); background:var(--deep); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; color:transparent; }
+.fq-option.chosen .fq-check { border-color:var(--chain); background:rgba(200,168,75,0.12); color:var(--chain); }
+
+/* Scale */
+.fq-scale { display:flex; align-items:center; gap:6px; margin-top:8px; flex-wrap:wrap; }
+.fq-scale-btn {
+  width:36px; height:36px; border-radius:50%; border:1px solid var(--border);
+  background:var(--deep); display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-title); font-size:11px; color:var(--muted);
+}
+.fq-scale-btn.chosen { border-color:var(--chain); background:rgba(200,168,75,0.12); color:var(--chain); box-shadow:0 0 10px rgba(200,168,75,0.2); }
+.fq-scale-label { font-size:11px; color:var(--muted); font-style:italic; padding:0 4px; }
+
+/* Reason */
+.fq-reason { font-size:12px; color:var(--muted); font-style:italic; margin-top:8px; padding-top:7px; border-top:1px solid rgba(46,37,64,0.4); display:flex; gap:6px; align-items:flex-start; }
+.fq-reason-rune { color:var(--chain-dim); font-size:13px; flex-shrink:0; }
+
+/* Stats */
+.fill-stats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.fill-stat { font-family:var(--font-title); font-size:10px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; background:var(--deep); border:1px solid var(--border); padding:6px 14px; border-radius:1px; }
+.fill-stat span { color:var(--chain); }
+
+/* iframe */
+.form-iframe { width:100%; height:70vh; border:1px solid var(--border); border-radius:3px; background:#fff; display:block; }
+
+@keyframes bind-in { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+</style>
+</head>
+<body>
+
+<!-- Wolf / Blood Moon SVG background -->
+<div class="wolf-bg">
+  <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="bm" cx="50%" cy="24%" r="30%">
+        <stop offset="0%"   stop-color="#3a0a0a" stop-opacity="0.95"/>
+        <stop offset="60%"  stop-color="#1a0505" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#07060a" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="mc" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#7a1e1e" stop-opacity="0.38"/>
+        <stop offset="100%" stop-color="#07060a" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="fh"><feGaussianBlur stdDeviation="18"/></filter>
+      <filter id="fm"><feGaussianBlur stdDeviation="8"/></filter>
+      <filter id="fs"><feGaussianBlur stdDeviation="3"/></filter>
+    </defs>
+    <rect width="100%" height="100%" fill="#07060a"/>
+    <!-- Blood moon -->
+    <ellipse cx="500" cy="155" rx="280" ry="180" fill="url(#bm)" filter="url(#fh)"/>
+    <circle  cx="500" cy="128" r="92"  fill="url(#mc)" filter="url(#fm)"/>
+    <circle  cx="500" cy="128" r="54"  fill="#2a0808" opacity="0.42" filter="url(#fs)"/>
+    <circle  cx="500" cy="128" r="38"  fill="#1a0505" opacity="0.5"/>
+    <!-- Moon cracks -->
+    <g stroke="#7a1e1e" stroke-width="0.8" opacity="0.28" filter="url(#fs)">
+      <line x1="482" y1="100" x2="491" y2="152"/>
+      <line x1="491" y1="152" x2="502" y2="162"/>
+      <line x1="512" y1="104" x2="507" y2="138"/>
+      <line x1="507" y1="138" x2="522" y2="156"/>
+      <line x1="472" y1="133" x2="496" y2="143"/>
+    </g>
+    <!-- Wolf silhouette -->
+    <g opacity="0.20" fill="#3a0808" filter="url(#fs)">
+      <ellipse cx="500" cy="510" rx="162" ry="92"/>
+      <circle  cx="390" cy="418" r="66"/>
+      <ellipse cx="340" cy="444" rx="46" ry="29"/>
+      <polygon points="360,368 340,298 396,354"/>
+      <polygon points="416,364 411,294 452,354"/>
+      <path d="M638,478 Q722,428 742,348 Q757,298 722,278" stroke="#3a0808" stroke-width="32" fill="none" stroke-linecap="round"/>
+      <rect x="412" y="570" width="35" height="112" rx="17"/>
+      <rect x="476" y="570" width="35" height="112" rx="17"/>
+      <rect x="540" y="576" width="35" height="106" rx="17"/>
+      <rect x="600" y="566" width="35" height="102" rx="17"/>
+    </g>
+    <!-- Eye glow -->
+    <circle cx="368" cy="418" r="14" fill="#c85a1e" opacity="0.22" filter="url(#fm)"/>
+    <circle cx="368" cy="418" r="5"  fill="#ff6030" opacity="0.38" filter="url(#fs)"/>
+    <!-- Ground shadow -->
+    <ellipse cx="500" cy="668" rx="282" ry="52" fill="#1a0505" opacity="0.4" filter="url(#fh)"/>
+    <!-- Embers -->
+    <g fill="#c85a1e" opacity="0.32">
+      <circle cx="205" cy="298" r="1.5" filter="url(#fs)"/>
+      <circle cx="652" cy="248" r="1.2" filter="url(#fs)"/>
+      <circle cx="752" cy="378" r="2"   filter="url(#fs)"/>
+      <circle cx="152" cy="448" r="1.5" filter="url(#fs)"/>
+      <circle cx="818" cy="202" r="1.2" filter="url(#fs)"/>
+      <circle cx="282" cy="202" r="1"   filter="url(#fs)"/>
+    </g>
+    <!-- Binding chain on wolf -->
+    <g stroke="#7a6530" stroke-width="1.4" fill="none" opacity="0.22">
+      <path d="M0,352 Q202,322 352,402 Q452,452 502,502 Q602,562 802,542 Q902,532 1000,562"/>
+      <ellipse cx="202" cy="334" rx="10" ry="5" transform="rotate(-10,202,334)"/>
+      <ellipse cx="382" cy="410" rx="10" ry="5" transform="rotate(5,382,410)"/>
+      <ellipse cx="542" cy="458" rx="10" ry="5" transform="rotate(-5,542,458)"/>
+    </g>
+    <!-- Runes bottom -->
+    <text x="500" y="682" text-anchor="middle" font-family="serif" font-size="11" fill="#7a1e1e" opacity="0.28" letter-spacing="8">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ</text>
+  </svg>
+</div>
+<div class="wolf-overlay"></div>
+<div class="wolf-glow"></div>
+
+<div class="container">
+  <header style="padding-top:44px; padding-bottom:24px;">
+    <a href="index.html" class="back-link">메인으로</a>
+    <div class="fenrir-badge">Fenrir's Eye</div>
+    <div class="site-title">Form<span class="accent-r"> Preview</span></div>
+    <p class="site-subtitle">
+      구글 폼을 불러와 AI가 모든 문항에 답을 채운 미리보기를 생성합니다.<br>
+      <em>펜리르는 모든 것을 꿰뚫어 본다.</em>
+    </p>
+  </header>
+
+  <div class="chain-divider"><span>ᛜ</span></div>
+
+  <!-- Input card -->
+  <div class="step-card active" id="inputCard">
+    <div class="step-header">
+      <div class="step-num" style="border-color:rgba(122,30,30,0.7);color:#c46060;">ᚠ</div>
+      <div>
+        <div class="step-title">Google Form URL</div>
+        <div class="step-desc">AI가 모든 문항에 답을 채울 구글 폼 링크를 입력하세요</div>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Form URL</label>
+      <input type="url" id="formUrl" placeholder="https://docs.google.com/forms/d/e/...">
+    </div>
+    <div class="input-group" style="margin-top:10px;">
+      <label>컨텍스트 <span class="optional">(선택)</span></label>
+      <textarea id="context" rows="2" placeholder="예: 물리 중간고사 / 마케팅 설문 등 폼의 성격을 알려주세요"></textarea>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-primary" id="loadBtn" onclick="loadPreview()">
+        ᚷ &nbsp;미리보기 생성
+      </button>
+    </div>
+    <div class="status-bar hidden" id="statusBar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText"></span>
+    </div>
+  </div>
+
+  <!-- Preview result -->
+  <div id="preview-section" class="hidden">
+    <div class="chain-divider"><span>ᛏ</span></div>
+    <div class="section-title" style="color:#c46060;--chain-dim:#c46060;">답변 완성</div>
+
+    <div class="fill-stats" id="fillStats"></div>
+
+    <div class="view-tab-row">
+      <button class="view-tab active" onclick="switchView('filled',this)">완성된 폼</button>
+      <button class="view-tab"        onclick="switchView('iframe',this)">원본 보기</button>
+    </div>
+
+    <div id="view-filled">
+      <div class="form-shell" id="formShell"></div>
+    </div>
+
+    <div id="view-iframe" class="hidden">
+      <iframe id="formIframe" class="form-iframe" src="" allowfullscreen></iframe>
+    </div>
+
+    <div class="actions-row" style="margin-top:16px;">
+      <button class="btn btn-primary"                                       onclick="copyAll()">ᚹ &nbsp;전체 복사</button>
+      <button class="btn btn-ghost" style="border-color:rgba(200,168,75,0.4);color:var(--chain-dim);" onclick="openSaveModal()">ᚦ &nbsp;프로젝트 저장</button>
+      <button class="btn btn-ghost"                                         onclick="goSolver()">ᚲ &nbsp;정답 생성으로</button>
+      <button class="btn btn-ghost"                                         onclick="reset()">ᚢ &nbsp;처음으로</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save to project modal -->
+<div id="saveModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title">ᚦ 프로젝트에 저장</div>
+    <div class="modal-body">
+      <label>프로젝트 선택</label>
+      <select id="projSelect" style="margin-bottom:12px;"></select>
+      <div id="noProjMsg" class="hidden" style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">
+        프로젝트가 없습니다. <a href="projects.html" style="color:var(--chain-dim);">프로젝트 만들기 →</a>
+      </div>
+      <label>제목</label>
+      <input type="text" id="entryTitle" placeholder="예: 중간고사 폼 답변">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gleipnir" onclick="confirmSave()">저장</button>
+      <button class="btn btn-ghost"    onclick="closeSaveModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p class="footer-text">Fenrir's Eye — AI Form Preview</p>
+  <div class="secret-runes">
+    <a href="fenrir.html"   class="secret-rune" tabindex="-1" aria-hidden="true">ᚠ</a>
+    <a href="settings.html" class="secret-rune" tabindex="-1" aria-hidden="true">ᚢ</a>
+    <a href="projects.html" class="secret-rune" tabindex="-1" aria-hidden="true">ᚦ</a>
+  </div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+let filledAnswers = [];
+
+window.addEventListener('DOMContentLoaded', () => {
+  const ctx = getSetting('defaultContext','');
+  if (ctx) document.getElementById('context').value = ctx;
+});
+
+function setStatus(msg, type='loading') {
+  const bar = document.getElementById('statusBar');
+  bar.classList.remove('hidden');
+  document.getElementById('statusDot').className = 'status-dot ' + type;
+  document.getElementById('statusText').textContent = msg;
+}
+
+async function loadPreview() {
+  const url     = document.getElementById('formUrl').value.trim();
+  const context = document.getElementById('context').value.trim();
+
+  if (!url || !url.includes('google.com/forms')) { alert('올바른 Google Form URL을 입력해주세요.'); return; }
+
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  document.getElementById('preview-section').classList.add('hidden');
+
+  try {
+    setStatus('구글 폼 불러오는 중...');
+
+    const html = await fetchViaProxy(url);
+    setStatus('폼 구조 파싱 중...');
+
+    const raw = extractFormRaw(html);
+    if (!raw) throw new Error('폼을 파싱할 수 없습니다. 폼이 공개 상태인지 확인해주세요.');
+
+    const form = parseFormData(raw);
+    if (!form.questions.length) throw new Error('문항을 찾을 수 없습니다.');
+
+    setStatus(`${form.questions.length}개 문항 — Claude가 답변 채우는 중...`);
+
+    // Build prompt
+    const personalInfo = getPersonalInfo();
+    const personalCtx  = buildPersonalContext(personalInfo);
+    const includeReason = getSetting('includeReason', true);
+
+    let system = `당신은 구글 폼의 모든 필드를 정확하게 채우는 AI입니다.
+규칙:
+1. 순수 JSON만 응답 (마크다운, 설명 없이)
+2. 객관식/체크박스/드롭다운은 반드시 주어진 selected_options 목록 중에서 선택
+3. 시험/퀴즈는 정확한 정답 선택
+4. 개인정보 필드(이름, 학번, 이메일 등)는 제공된 정보로 정확히 채우기
+5. 제공된 정보 없는 개인정보 필드는 answer에 빈 문자열`;
+
+    if (personalCtx)    system += `\n\n제출자 정보:\n${personalCtx}`;
+    if (context)        system += `\n\n폼 컨텍스트: ${context}`;
+    if (includeReason)  system += '\n6. brief_reason 필드에 선택 근거를 한 문장으로 추가 (개인정보 필드 제외)';
+
+    const qList = form.questions.map((q, i) => {
+      let t = `Q${i+1}. [${q.type}] ${q.title}`;
+      if (q.description)    t += `\n   설명: ${q.description}`;
+      if (q.options.length) t += `\n   선택지: ${q.options.join(' | ')}`;
+      if (q.type === 'scale') t += `\n   척도: ${q.scaleMin}(${q.scaleMinLabel||'최솟값'}) ~ ${q.scaleMax}(${q.scaleMaxLabel||'최댓값'})`;
+      if (q.required) t += '\n   [필수]';
+      return t;
+    }).join('\n\n');
+
+    const user = `폼 제목: ${form.title}
+${form.description ? '폼 설명: ' + form.description : ''}
+
+=== 문항 (총 ${form.questions.length}개) ===
+${qList}
+
+=== 응답 JSON 형식 ===
+{
+  "answers": [
+    {
+      "q_index": 0,
+      "question": "문항 제목",
+      "answer": "단답/장문 텍스트 답변",
+      "selected_options": ["객관식/체크박스 선택 항목"],
+      "scale_value": 4,
+      "brief_reason": "선택 이유 한 문장"
+    }
+  ]
+}
+
+모든 ${form.questions.length}개 문항에 답변하세요.`;
+
+    const aiText = await callClaude(user, system);
+    const parsed = parseAIJson(aiText);
+    filledAnswers = parsed.answers || [];
+
+    setStatus('렌더링 중...');
+    renderFilledForm(form, filledAnswers);
+    document.getElementById('formIframe').src = url;
+
+    const personalCount = form.questions.filter(q => isPersonalField(q.title)).length;
+    document.getElementById('fillStats').innerHTML = `
+      <div class="fill-stat">총 문항 <span>${form.questions.length}</span></div>
+      <div class="fill-stat">답변 완료 <span>${filledAnswers.length}</span></div>
+      <div class="fill-stat">개인정보 필드 <span>${personalCount}</span></div>
+    `;
+
+    setStatus(`ᚠ 완료 — ${filledAnswers.length}개 문항 답변 생성`, 'success');
+
+    incrementStat('forms');
+    document.getElementById('inputCard').classList.remove('active');
+    document.getElementById('inputCard').classList.add('done');
+    document.getElementById('inputCard').querySelector('.step-num').textContent = 'ᚠ';
+
+    document.getElementById('preview-section').classList.remove('hidden');
+    document.getElementById('preview-section').scrollIntoView({ behavior:'smooth', block:'start' });
+
+  } catch(err) {
+    setStatus('오류: ' + err.message, 'error');
+    console.error(err);
+  } finally { btn.disabled = false; }
+}
+
+function renderFilledForm(form, answers) {
+  const shell = document.getElementById('formShell');
+  shell.innerHTML = `
+    <div class="form-shell-header">
+      <div class="form-shell-title">${form.title}</div>
+      ${form.description ? `<div class="form-shell-desc">${form.description}</div>` : ''}
+    </div>
+  `;
+
+  form.questions.forEach((q, i) => {
+    const ans      = answers.find(a => a.q_index === i) || answers[i] || {};
+    const personal = isPersonalField(q.title);
+    const block    = document.createElement('div');
+    block.className = `fq-block ${personal ? 'is-personal' : 'is-answer'}`;
+    block.style.animationDelay = (i * 0.045) + 's';
+
+    const selOpts = ans.selected_options || [];
+    const ansText = ans.answer || '';
+    const scaleVal = ans.scale_value;
+
+    let inputHTML = '';
+
+    switch (q.type) {
+      case 'short_text':
+      case 'long_text':
+        inputHTML = `<div class="fq-text ${personal ? 'personal' : ''}">${ansText || '—'}</div>`;
+        break;
+      case 'paragraph':
+        inputHTML = `<textarea class="fq-textarea" disabled>${ansText || '—'}</textarea>`;
+        break;
+      case 'multiple_choice':
+        inputHTML = `<div class="fq-options">${q.options.map(o => {
+          const chosen = selOpts.includes(o) || ansText === o;
+          return `<div class="fq-option ${chosen?'chosen':''}">
+            <div class="fq-radio"><div class="fq-radio-dot"></div></div>
+            <span>${o}</span>
+          </div>`;
+        }).join('')}</div>`;
+        break;
+      case 'checkbox':
+        inputHTML = `<div class="fq-options">${q.options.map(o => {
+          const chosen = selOpts.includes(o);
+          return `<div class="fq-option ${chosen?'chosen':''}">
+            <div class="fq-check">${chosen?'✓':''}</div>
+            <span>${o}</span>
+          </div>`;
+        }).join('')}</div>`;
+        break;
+      case 'dropdown':
+        inputHTML = `<div class="fq-options">${q.options.map(o => {
+          const chosen = selOpts.includes(o) || ansText === o;
+          return `<div class="fq-option ${chosen?'chosen':''}" style="font-size:13px;">
+            <span style="color:${chosen?'var(--chain-dim)':'var(--muted)'};margin-right:4px;font-size:10px;">▸</span>
+            <span>${o}</span>
+          </div>`;
+        }).join('')}</div>`;
+        break;
+      case 'scale':
+      case 'linear_scale': {
+        const min = q.scaleMin ?? 1, max = q.scaleMax ?? 5;
+        let btns = '';
+        for (let n = min; n <= max; n++)
+          btns += `<div class="fq-scale-btn ${(scaleVal==n||parseInt(ansText)==n)?'chosen':''}">${n}</div>`;
+        inputHTML = `<div class="fq-scale">
+          ${q.scaleMinLabel ? `<span class="fq-scale-label">${q.scaleMinLabel}</span>` : ''}
+          ${btns}
+          ${q.scaleMaxLabel ? `<span class="fq-scale-label">${q.scaleMaxLabel}</span>` : ''}
+        </div>`;
+        break;
+      }
+      default:
+        inputHTML = `<div class="fq-text">${ansText || '—'}</div>`;
+    }
+
+    const reasonHTML = ans.brief_reason && !personal
+      ? `<div class="fq-reason"><span class="fq-reason-rune">ᚱ</span><span>${ans.brief_reason}</span></div>`
+      : '';
+
+    block.innerHTML = `
+      <div class="fq-title">
+        <span>${q.title}</span>
+        ${q.required ? '<span class="fq-required">*</span>' : ''}
+      </div>
+      ${q.description ? `<div class="fq-desc">${q.description}</div>` : ''}
+      ${inputHTML}
+      ${reasonHTML}
+    `;
+    shell.appendChild(block);
+  });
+}
+
+function switchView(name, btn) {
+  document.getElementById('view-filled').classList.toggle('hidden', name !== 'filled');
+  document.getElementById('view-iframe').classList.toggle('hidden', name !== 'iframe');
+  document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function copyAll() {
+  const lines = filledAnswers.map((a, i) => {
+    const ans = a.answer || a.selected_options?.join(', ') || (a.scale_value ? a.scale_value+'점' : '');
+    const reason = a.brief_reason ? `\n근거: ${a.brief_reason}` : '';
+    return `Q${i+1}. ${a.question}\n답: ${ans}${reason}`;
+  }).join('\n\n');
+  navigator.clipboard.writeText(lines).then(() => {
+    const btn = event.target; btn.textContent = 'ᚠ 복사 완료';
+    setTimeout(() => btn.textContent = 'ᚹ 전체 복사', 2000);
+  });
+}
+
+function goSolver() {
+  const url = document.getElementById('formUrl').value.trim();
+  if (url) sessionStorage.setItem('prefill_url', url);
+  window.location.href = 'index.html';
+}
+
+function reset() {
+  document.getElementById('preview-section').classList.add('hidden');
+  document.getElementById('formShell').innerHTML = '';
+  document.getElementById('formIframe').src = '';
+  document.getElementById('statusBar').classList.add('hidden');
+  document.getElementById('formUrl').value = '';
+  document.getElementById('loadBtn').disabled = false;
+  document.getElementById('inputCard').classList.remove('done');
+  document.getElementById('inputCard').classList.add('active');
+  document.getElementById('inputCard').querySelector('.step-num').textContent = 'ᚠ';
+  filledAnswers = [];
+}
+
+/* ── Save to project ── */
+function openSaveModal() {
+  const projects = getProjects();
+  const sel   = document.getElementById('projSelect');
+  const noMsg = document.getElementById('noProjMsg');
+  sel.innerHTML = '';
+  if (!projects.length) {
+    sel.classList.add('hidden'); noMsg.classList.remove('hidden');
+  } else {
+    noMsg.classList.add('hidden'); sel.classList.remove('hidden');
+    projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.icon + ' ' + p.name;
+      sel.appendChild(opt);
+    });
+  }
+  const url = document.getElementById('formUrl').value || '';
+  document.getElementById('entryTitle').value = url ? '폼 답변 — ' + url.split('/d/e/')[1]?.substring(0,12) + '...' : '폼 답변 결과';
+  document.getElementById('saveModal').classList.remove('hidden');
+}
+
+function closeSaveModal() { document.getElementById('saveModal').classList.add('hidden'); }
+
+function confirmSave() {
+  const projId = document.getElementById('projSelect').value;
+  const title  = document.getElementById('entryTitle').value.trim() || '폼 답변';
+  if (!projId) return;
+
+  const lines = filledAnswers.map((a,i) => {
+    const ans = a.answer || a.selected_options?.join(', ') || (a.scale_value ? a.scale_value+'점' : '');
+    const reason = a.brief_reason ? `\n근거: ${a.brief_reason}` : '';
+    return `Q${i+1}. ${a.question}\n답: ${ans}${reason}`;
+  }).join('\n\n');
+
+  saveEntryToProject(projId, {
+    type:    'fenrir',
+    title,
+    content: lines,
+    source:  document.getElementById('formUrl').value || '',
+  });
+
+  closeSaveModal();
+  const btn = document.querySelector('[onclick="openSaveModal()"]');
+  if (btn) { btn.textContent = 'ᚠ 저장 완료'; setTimeout(() => btn.textContent = 'ᚦ 프로젝트 저장', 2000); }
+}
+
+document.getElementById('saveModal').addEventListener('click', e => {
+  if (e.target.id === 'saveModal') closeSaveModal();
+});
+</script>
+</body>
+</html>

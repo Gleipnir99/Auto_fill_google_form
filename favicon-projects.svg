@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#07060a"/>
+  <!-- Shelf board -->
+  <rect x="4" y="22" width="24" height="2.5" rx="1" fill="#4a3a6a"/>
+  <!-- Book 1 (gold) -->
+  <rect x="6" y="10" width="5" height="12" rx="1" fill="#c8a84b" opacity="0.9"/>
+  <rect x="6" y="10" width="1.5" height="12" rx="0.5" fill="#a07830"/>
+  <!-- Book 2 (teal tall) -->
+  <rect x="12" y="7" width="4" height="15" rx="1" fill="#3a7a78" opacity="0.9"/>
+  <rect x="12" y="7" width="1.2" height="15" rx="0.5" fill="#2a5a58"/>
+  <!-- Book 3 (blood) -->
+  <rect x="17" y="12" width="4" height="10" rx="1" fill="#7a1e1e" opacity="0.85"/>
+  <rect x="17" y="12" width="1.2" height="10" rx="0.5" fill="#5a1010"/>
+  <!-- Book 4 (muted) -->
+  <rect x="22" y="9" width="4" height="13" rx="1" fill="#3a3050" opacity="0.9"/>
+  <rect x="22" y="9" width="1.2" height="13" rx="0.5" fill="#2a2040"/>
+  <!-- Glow -->
+  <rect x="4" y="22" width="24" height="2.5" rx="1" fill="none" stroke="#c8a84b" stroke-width="0.4" opacity="0.4"/>
+</svg>

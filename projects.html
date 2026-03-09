@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — Gleipnir</title>
+<link rel="icon" type="image/svg+xml" href="favicon-projects.svg">
+<link rel="stylesheet" href="style.css">
+<style>
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 40% at 50% 0%,   rgba(42,30,90,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 35% 50% at 90% 80%,   rgba(200,168,75,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 10% 60%,   rgba(58,122,120,0.07) 0%, transparent 55%);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header style="padding-top:44px; padding-bottom:24px;">
+    <a href="index.html" class="back-link">메인으로</a>
+    <div class="site-eyebrow">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ</div>
+    <div class="site-title">Pro<span class="accent">jects</span></div>
+    <p class="site-subtitle">
+      과목별로 분석 결과와 폼 답변을 모아 관리합니다.<br>
+      <em>모든 사슬의 고리는 기억된다.</em>
+    </p>
+  </header>
+
+  <div class="chain-divider"><span>ᛟ</span></div>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+      <div class="section-title" style="margin:0;">내 프로젝트</div>
+      <button class="btn btn-primary" style="font-size:11px;padding:8px 18px;" onclick="openNewModal()">
+        ᚦ &nbsp;새 프로젝트
+      </button>
+    </div>
+
+    <div class="proj-grid" id="projGrid"></div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="detailView" class="proj-detail">
+    <div class="detail-header">
+      <span class="detail-icon" id="detailIcon"></span>
+      <span class="detail-title" id="detailTitle"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="detail-back" onclick="showList()">← 목록으로</button>
+        <button class="detail-back" style="color:#c46060;border-color:rgba(122,30,30,0.4);" onclick="confirmDeleteProject()">삭제</button>
+      </div>
+    </div>
+    <div class="entry-list" id="entryList"></div>
+    <div class="empty-state hidden" id="emptyEntries">
+      <div class="empty-state-icon">ᛟ</div>
+      <div class="empty-state-text">저장된 항목이 없습니다</div>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;font-style:italic;">Gleipnir 또는 Fenrir에서 결과를 저장해보세요.</p>
+    </div>
+  </div>
+</div>
+
+<!-- New Project Modal -->
+<div id="newModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title">ᚦ 새 프로젝트</div>
+    <div class="modal-body">
+      <label>프로젝트 이름</label>
+      <input type="text" id="newProjName" placeholder="예: 물리학 / 마케팅 수업 / 중간고사">
+
+      <label style="margin-top:10px;">아이콘</label>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;" id="iconPicker">
+        <!-- Elder Futhark runes -->
+        <span class="icon-opt selected" onclick="selectIcon(this)" data-icon="ᚠ" title="Fehu — 재물/지식">ᚠ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚢ" title="Uruz — 힘">ᚢ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚦ" title="Thurisaz — 보호">ᚦ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚨ" title="Ansuz — 지혜">ᚨ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚱ" title="Raidho — 여정">ᚱ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚲ" title="Kenaz — 불꽃/학습">ᚲ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚷ" title="Gebo — 선물">ᚷ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚹ" title="Wunjo — 기쁨">ᚹ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚺ" title="Hagalaz — 변화">ᚺ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᚾ" title="Nauthiz — 필요">ᚾ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛁ" title="Isa — 집중">ᛁ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛃ" title="Jera — 수확">ᛃ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛇ" title="Eihwaz — 끈기">ᛇ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛈ" title="Perthro — 비밀">ᛈ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛉ" title="Algiz — 방어">ᛉ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛊ" title="Sowilo — 승리">ᛊ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛏ" title="Tiwaz — 정의">ᛏ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛒ" title="Berkano — 성장">ᛒ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛖ" title="Ehwaz — 이동">ᛖ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛗ" title="Mannaz — 인간/자아">ᛗ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛚ" title="Laguz — 흐름">ᛚ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛜ" title="Ingwaz — 완성">ᛜ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛞ" title="Dagaz — 변환">ᛞ</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="ᛟ" title="Othala — 뿌리/유산">ᛟ</span>
+        <!-- Norse symbols -->
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="⛓" title="사슬 — Gleipnir">⛓</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="🐺" title="늑대 — Fenrir">🐺</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="⚒" title="모루 — 단련">⚒</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="✦" title="별 — 별자리">✦</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="⚡" title="번개 — Thor">⚡</span>
+        <span class="icon-opt" onclick="selectIcon(this)" data-icon="🌑" title="혈월 — Fenrir">🌑</span>
+      </div>
+
+      <label style="margin-top:12px;">색상</label>
+      <div class="color-picker" id="colorPicker">
+        <div class="color-swatch selected" data-color="#c8a84b" style="background:#c8a84b;" onclick="selectColor(this)"></div>
+        <div class="color-swatch" data-color="#8dd4d0" style="background:#8dd4d0;" onclick="selectColor(this)"></div>
+        <div class="color-swatch" data-color="#c46060" style="background:#c46060;" onclick="selectColor(this)"></div>
+        <div class="color-swatch" data-color="#7a9bc8" style="background:#7a9bc8;" onclick="selectColor(this)"></div>
+        <div class="color-swatch" data-color="#8bc87a" style="background:#8bc87a;" onclick="selectColor(this)"></div>
+        <div class="color-swatch" data-color="#c87ab8" style="background:#c87ab8;" onclick="selectColor(this)"></div>
+        <div class="color-swatch" data-color="#c8a07a" style="background:#c8a07a;" onclick="selectColor(this)"></div>
+        <div class="color-swatch" data-color="#7ac8c8" style="background:#7ac8c8;" onclick="selectColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gleipnir" onclick="confirmNewProject()">만들기</button>
+      <button class="btn btn-ghost"    onclick="closeNewModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p class="footer-text">Projects — 과목별 내역 관리</p>
+  <div class="secret-runes">
+    <a href="fenrir.html"   class="secret-rune" tabindex="-1" aria-hidden="true">ᚠ</a>
+    <a href="settings.html" class="secret-rune" tabindex="-1" aria-hidden="true">ᚢ</a>
+  </div>
+</footer>
+
+<style>
+.icon-opt {
+  font-size: 17px; cursor: pointer; padding: 5px 8px; border-radius: 3px;
+  border: 1px solid transparent; transition: all 0.2s; user-select: none;
+  color: var(--muted); font-family: serif; line-height: 1;
+}
+.icon-opt:hover    { background: rgba(200,168,75,0.08); color: var(--parchment); border-color: rgba(200,168,75,0.2); }
+.icon-opt.selected { border-color: var(--chain); background: rgba(200,168,75,0.1); color: var(--chain); }
+</style>
+
+<script src="shared.js"></script>
+<script>
+/* ── State ── */
+let currentProjectId = null;
+
+/* ── Init ── */
+window.addEventListener('DOMContentLoaded', () => {
+  renderList();
+
+  // Auto-open project if passed via URL ?proj=id
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('proj');
+  if (pid) openProject(pid);
+});
+
+/* ══════════════════
+   LIST VIEW
+══════════════════ */
+function renderList() {
+  const grid = document.getElementById('projGrid');
+  const projects = getProjects();
+  grid.innerHTML = '';
+
+  // New project card first
+  const newCard = document.createElement('div');
+  newCard.className = 'proj-card-new';
+  newCard.onclick = openNewModal;
+  newCard.innerHTML = `<span class="proj-card-new-icon">＋</span><span class="proj-card-new-label">새 프로젝트</span>`;
+  grid.appendChild(newCard);
+
+  if (!projects.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'grid-column:1/-1;padding:40px;text-align:center;';
+    empty.innerHTML = `<div style="font-size:32px;margin-bottom:12px;opacity:0.3;">ᛟ</div>
+      <div style="font-family:var(--font-title);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">프로젝트가 없습니다</div>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;font-style:italic;">새 프로젝트를 만들고 과목별로 자료를 모아보세요.</p>`;
+    grid.appendChild(empty);
+    return;
+  }
+
+  projects.forEach((proj, i) => {
+    const lastEntry = proj.entries?.[0];
+    const lastText  = lastEntry
+      ? relativeTime(lastEntry.createdAt) + ' — ' + lastEntry.title
+      : '항목 없음';
+
+    const card = document.createElement('div');
+    card.className = 'proj-card';
+    card.style.animationDelay = (i * 0.06) + 's';
+    card.onclick = () => openProject(proj.id);
+    card.innerHTML = `
+      <div class="proj-card-header">
+        <div class="proj-color-dot" style="background:${proj.color};color:${proj.color};"></div>
+        <span class="proj-icon">${proj.icon}</span>
+        <span class="proj-name">${proj.name}</span>
+        <span class="proj-count">${proj.entries?.length || 0}개</span>
+      </div>
+      <div class="proj-card-body">
+        <div class="proj-last">${lastText}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* ══════════════════
+   DETAIL VIEW
+══════════════════ */
+function openProject(projId) {
+  const projects = getProjects();
+  const proj = projects.find(p => p.id === projId);
+  if (!proj) return;
+
+  currentProjectId = projId;
+
+  document.getElementById('detailIcon').textContent  = proj.icon;
+  document.getElementById('detailTitle').textContent = proj.name;
+
+  renderEntries(proj);
+
+  document.getElementById('listView').style.display   = 'none';
+  document.getElementById('detailView').classList.add('active');
+  history.replaceState(null,'',`?proj=${projId}`);
+}
+
+function renderEntries(proj) {
+  const list  = document.getElementById('entryList');
+  const empty = document.getElementById('emptyEntries');
+  list.innerHTML = '';
+
+  if (!proj.entries?.length) {
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  proj.entries.forEach((entry, i) => {
+    const card = document.createElement('div');
+    card.className = 'entry-card';
+    card.style.animationDelay = (i * 0.04) + 's';
+
+    const typeLabel  = entry.type === 'fenrir' ? 'Fenrir 폼 답변' : 'Gleipnir 자료 분석';
+    const badgeCls   = entry.type === 'fenrir' ? 'fenrir' : 'gleipnir';
+    const dateStr    = relativeTime(entry.createdAt);
+    const preview    = (entry.content || '').substring(0, 120).replace(/\n/g,' ') + '…';
+
+    card.innerHTML = `
+      <div class="entry-card-header" onclick="toggleEntry(this)">
+        <span class="entry-type-badge ${badgeCls}">${typeLabel}</span>
+        <span class="entry-title">${entry.title}</span>
+        <span class="entry-date">${dateStr}</span>
+        <button class="entry-delete" onclick="removeEntry(event,'${entry.id}')">✕</button>
+      </div>
+      <div class="entry-body">
+        ${entry.content ? escapeHtml(entry.content) : '(내용 없음)'}
+      </div>
+      ${entry.source ? `<div class="entry-source">출처: ${escapeHtml(entry.source)}</div>` : ''}
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleEntry(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function removeEntry(e, entryId) {
+  e.stopPropagation();
+  if (!confirm('이 항목을 삭제할까요?')) return;
+  deleteEntry(currentProjectId, entryId);
+  const projects = getProjects();
+  const proj = projects.find(p => p.id === currentProjectId);
+  renderEntries(proj);
+  renderList();
+}
+
+function showList() {
+  currentProjectId = null;
+  document.getElementById('detailView').classList.remove('active');
+  document.getElementById('listView').style.display = '';
+  history.replaceState(null,'','projects.html');
+  renderList();
+}
+
+function confirmDeleteProject() {
+  if (!confirm('이 프로젝트와 모든 항목을 삭제할까요?')) return;
+  deleteProject(currentProjectId);
+  showList();
+}
+
+/* ══════════════════
+   NEW PROJECT MODAL
+══════════════════ */
+function openNewModal() {
+  document.getElementById('newProjName').value = '';
+  document.querySelectorAll('.icon-opt').forEach(e => e.classList.remove('selected'));
+  document.querySelector('.icon-opt[data-icon="ᚠ"]').classList.add('selected');
+  document.querySelectorAll('.color-swatch').forEach(e => e.classList.remove('selected'));
+  document.querySelector('.color-swatch[data-color="#c8a84b"]').classList.add('selected');
+  document.getElementById('newModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('newProjName').focus(), 100);
+}
+
+function closeNewModal() { document.getElementById('newModal').classList.add('hidden'); }
+
+function selectIcon(el) {
+  document.querySelectorAll('.icon-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectColor(el) {
+  document.querySelectorAll('.color-swatch').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function confirmNewProject() {
+  const name  = document.getElementById('newProjName').value.trim();
+  if (!name) { document.getElementById('newProjName').focus(); return; }
+  const icon  = document.querySelector('.icon-opt.selected')?.dataset.icon  || '📁';
+  const color = document.querySelector('.color-swatch.selected')?.dataset.color || '#c8a84b';
+  const proj  = createProject(name, color, icon);
+  closeNewModal();
+  renderList();
+  openProject(proj.id);
+}
+
+// Enter key in name input
+document.getElementById('newProjName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmNewProject();
+});
+
+// Close modal on backdrop
+document.getElementById('newModal').addEventListener('click', e => {
+  if (e.target.id === 'newModal') closeNewModal();
+});
+
+/* ── Utils ── */
+function relativeTime(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (m < 1)  return '방금 전';
+  if (m < 60) return m + '분 전';
+  if (h < 24) return h + '시간 전';
+  if (d < 30) return d + '일 전';
+  return new Date(ts).toLocaleDateString('ko-KR');
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

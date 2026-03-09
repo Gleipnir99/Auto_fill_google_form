@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gleipnir — 자료 정리</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ── Chain background ── */
+.chain-bg { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.chain-bg svg { width:100%; height:100%; opacity:0.055; }
+.chain-vignette {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 50%, transparent 30%, var(--bg) 80%),
+    radial-gradient(ellipse 100% 30% at 50% 0%,   var(--bg) 0%, transparent 100%),
+    radial-gradient(ellipse 100% 30% at 50% 100%, var(--bg) 0%, transparent 100%);
+}
+.chain-glow {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 30%, rgba(200,168,75,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(122,30,30,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 80% 20%, rgba(42,30,90,0.09) 0%, transparent 60%);
+}
+
+/* ── Drop zone ── */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 4px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: var(--deep);
+  position: relative;
+}
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: var(--chain-dim);
+  background: rgba(200,168,75,0.04);
+  box-shadow: 0 0 30px rgba(200,168,75,0.07);
+}
+.drop-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.drop-icon { font-size: 32px; margin-bottom: 12px; color: var(--chain-dim); display: block; }
+.drop-title {
+  font-family: var(--font-title); font-size: 13px; letter-spacing: 2px;
+  color: var(--parchment); text-transform: uppercase; margin-bottom: 6px;
+}
+.drop-desc { font-size: 13px; color: var(--muted); font-style: italic; }
+.drop-formats {
+  display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 14px;
+}
+.fmt-tag {
+  font-family: var(--font-title); font-size: 9px; letter-spacing: 1.5px;
+  padding: 3px 10px; border: 1px solid var(--border); border-radius: 1px;
+  color: var(--muted); text-transform: uppercase;
+}
+
+/* ── File list ── */
+.file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.file-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--deep); border: 1px solid var(--border);
+  border-radius: 2px; padding: 10px 14px;
+  animation: bind-in 0.3s ease forwards;
+}
+.file-icon { font-size: 18px; flex-shrink: 0; }
+.file-meta { flex: 1; min-width: 0; }
+.file-name { font-family: var(--font-title); font-size: 12px; color: var(--parchment); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-size { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px; }
+.file-remove {
+  font-size: 14px; color: var(--muted); cursor: pointer; background: none;
+  border: none; padding: 4px 8px; border-radius: 2px; transition: color 0.2s;
+  flex-shrink: 0;
+}
+.file-remove:hover { color: #c46060; }
+
+/* ── Mode selector ── */
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+.mode-card {
+  background: var(--deep); border: 1px solid var(--border);
+  border-radius: 2px; padding: 14px 16px; cursor: pointer;
+  transition: all 0.25s; user-select: none; text-align: center;
+}
+.mode-card:hover { border-color: var(--chain-dim); }
+.mode-card.selected { border-color: var(--chain); background: rgba(200,168,75,0.06); }
+.mode-card .mode-icon { font-size: 20px; margin-bottom: 6px; display: block; }
+.mode-card .mode-name { font-family: var(--font-title); font-size: 11px; letter-spacing: 1px; color: var(--parchment); }
+.mode-card.selected .mode-name { color: var(--chain); }
+.mode-card .mode-desc { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 3px; }
+
+/* ── Result section ── */
+.result-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 3px; overflow: hidden;
+}
+
+.result-header {
+  background: var(--deep); border-bottom: 1px solid var(--border);
+  padding: 14px 22px; display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+}
+
+.result-title {
+  font-family: var(--font-title); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--chain-dim);
+}
+
+.result-actions { display: flex; gap: 8px; }
+
+.result-body {
+  padding: 28px 32px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--parchment);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Markdown-style rendering */
+.result-body h1 { font-family: var(--font-display); font-size: 20px; color: var(--chain); margin: 24px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.result-body h2 { font-family: var(--font-title); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: var(--chain-dim); margin: 20px 0 10px; }
+.result-body h3 { font-family: var(--font-title); font-size: 13px; color: var(--parchment); margin: 16px 0 8px; }
+.result-body strong { color: var(--chain); font-weight: 600; }
+.result-body em { color: var(--muted); }
+.result-body ul, .result-body ol { padding-left: 22px; margin: 8px 0; }
+.result-body li { margin-bottom: 5px; }
+.result-body blockquote { border-left: 2px solid var(--chain-dim); padding-left: 16px; color: var(--muted); font-style: italic; margin: 12px 0; }
+.result-body code { font-family: monospace; font-size: 13px; background: var(--deep); padding: 2px 7px; border-radius: 2px; color: var(--gleipnir-dim); }
+.result-body hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.result-body a { color: var(--gleipnir-dim); text-decoration: underline dotted; }
+.result-body table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+.result-body th { background: var(--deep); border: 1px solid var(--border); padding: 8px 12px; font-family: var(--font-title); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--chain-dim); }
+.result-body td { border: 1px solid var(--border); padding: 7px 12px; }
+
+/* Scrollbar */
+.result-body::-webkit-scrollbar { width: 4px; }
+.result-body::-webkit-scrollbar-track { background: var(--deep); }
+.result-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+@media (max-width: 600px) { .mode-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="chain-bg">
+  <svg viewBox="0 0 900 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="cp" x="0" y="0" width="90" height="45" patternUnits="userSpaceOnUse">
+        <ellipse cx="22" cy="22" rx="18" ry="9"  fill="none" stroke="#c8a84b" stroke-width="2.2"/>
+        <ellipse cx="67" cy="22" rx="9"  ry="18" fill="none" stroke="#c8a84b" stroke-width="2.2"/>
+        <line x1="40" y1="22" x2="58" y2="22" stroke="#c8a84b" stroke-width="1.8"/>
+      </pattern>
+      <pattern id="cp2" x="0" y="0" width="90" height="45" patternUnits="userSpaceOnUse" patternTransform="rotate(55)">
+        <ellipse cx="22" cy="22" rx="16" ry="7"  fill="none" stroke="#7a6530" stroke-width="1.4"/>
+        <ellipse cx="67" cy="22" rx="7"  ry="16" fill="none" stroke="#7a6530" stroke-width="1.4"/>
+        <line x1="40" y1="22" x2="58" y2="22" stroke="#7a6530" stroke-width="1.2"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#cp2)" opacity="0.5"/>
+    <rect width="100%" height="100%" fill="url(#cp)"  opacity="1"/>
+    <g stroke="#c8a84b" stroke-width="2.2" fill="none" opacity="0.55">
+      <path d="M-60,90  Q100,60  220,130 Q360,200 460,155 Q580,110 700,175 Q800,230 960,190"/>
+      <path d="M-60,230 Q90,185  220,255 Q350,320 460,275 Q580,230 710,290 Q810,340 960,305"/>
+      <path d="M-60,370 Q110,330 240,395 Q370,460 470,415 Q590,370 710,425 Q820,470 960,440"/>
+      <path d="M-60,510 Q100,475 230,530 Q360,585 470,545 Q600,505 720,555 Q820,595 960,565"/>
+      <path d="M110,-30 Q85,100  130,210 Q175,340 110,455 Q65,555 120,660"  opacity="0.4"/>
+      <path d="M320,-30 Q280,110 325,235 Q370,370 305,485 Q260,570 320,660" opacity="0.4"/>
+      <path d="M530,-30 Q505,110 545,240 Q585,375 520,490 Q475,575 535,660" opacity="0.4"/>
+      <path d="M740,-30 Q700,90  745,215 Q785,345 720,460 Q675,555 735,660" opacity="0.4"/>
+    </g>
+    <g fill="none" stroke="#c8a84b" stroke-width="2" opacity="0.7">
+      <ellipse cx="220" cy="145" rx="24" ry="11"/><ellipse cx="220" cy="145" rx="11" ry="24" opacity="0.55"/>
+      <ellipse cx="460" cy="280" rx="24" ry="11"/><ellipse cx="460" cy="280" rx="11" ry="24" opacity="0.55"/>
+      <ellipse cx="690" cy="415" rx="24" ry="11"/><ellipse cx="690" cy="415" rx="11" ry="24" opacity="0.55"/>
+    </g>
+  </svg>
+</div>
+<div class="chain-vignette"></div>
+<div class="chain-glow"></div>
+
+<div class="container">
+  <header>
+    <div class="site-eyebrow">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ</div>
+    <div class="site-title">Gleip<span class="accent">nir</span></div>
+    <p class="site-subtitle">
+      PDF · PPT · DOCX 자료를 AI가 분석하고 핵심을 정리합니다.<br>
+      <em>불가능한 것들로 짜인 사슬이 가장 강하다.</em>
+    </p>
+  </header>
+
+  <div class="chain-divider"><span>ᛟ</span></div>
+
+  <div class="progress-wrap">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+
+  <!-- Step 1: Upload -->
+  <div class="step-card active" id="step1">
+    <div class="step-header">
+      <div class="step-num">I</div>
+      <div>
+        <div class="step-title">파일 업로드</div>
+        <div class="step-desc">분석할 자료를 드래그하거나 클릭해서 올려주세요</div>
+      </div>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.txt">
+      <span class="drop-icon">ᚲ</span>
+      <div class="drop-title">파일을 여기에 드래그하거나 클릭</div>
+      <div class="drop-desc">여러 파일 동시 업로드 가능</div>
+      <div class="drop-formats">
+        <span class="fmt-tag">PDF</span>
+        <span class="fmt-tag">PPT / PPTX</span>
+        <span class="fmt-tag">DOC / DOCX</span>
+        <span class="fmt-tag">TXT</span>
+      </div>
+    </div>
+
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <!-- Step 2: Mode + Context -->
+  <div class="step-card" id="step2">
+    <div class="step-header">
+      <div class="step-num">II</div>
+      <div>
+        <div class="step-title">정리 방식</div>
+        <div class="step-desc">어떻게 정리할지 선택하세요</div>
+      </div>
+    </div>
+
+    <div class="mode-grid" id="modeGrid">
+      <div class="mode-card selected" data-mode="summary" onclick="selectMode(this)">
+        <span class="mode-icon">📋</span>
+        <div class="mode-name">핵심 요약</div>
+        <div class="mode-desc">주요 내용만 간결하게</div>
+      </div>
+      <div class="mode-card" data-mode="detail" onclick="selectMode(this)">
+        <span class="mode-icon">🔍</span>
+        <div class="mode-name">상세 정리</div>
+        <div class="mode-desc">섹션별 깊이있게</div>
+      </div>
+      <div class="mode-card" data-mode="research" onclick="selectMode(this)">
+        <span class="mode-icon">🌐</span>
+        <div class="mode-name">심층 조사</div>
+        <div class="mode-desc">웹 검색으로 추가 자료</div>
+      </div>
+    </div>
+
+    <div class="input-group" style="margin-top:18px;">
+      <label>추가 지시 <span class="optional">(선택)</span></label>
+      <textarea id="context" rows="2" placeholder="예: 3학년 물리 수업 자료입니다. 공식 위주로 정리해주세요.&#10;예: 마케팅 전략 보고서입니다. 실행 방안을 중심으로 요약해주세요."></textarea>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()" disabled>
+        ᚱ &nbsp;분석 시작
+      </button>
+    </div>
+    <div class="status-bar hidden" id="statusBar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText"></span>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result-section" class="hidden">
+    <div class="chain-divider"><span>ᛏ</span></div>
+    <div class="section-title">정리 완료</div>
+
+    <div class="result-wrap">
+      <div class="result-header">
+        <span class="result-title" id="resultTitle">분석 결과</span>
+        <div class="result-actions">
+          <button class="btn btn-gleipnir" style="font-size:10px;padding:6px 14px;" onclick="openSaveModal()">ᚦ 프로젝트 저장</button>
+          <button class="btn btn-ghost" style="font-size:10px;padding:6px 14px;" onclick="copyResult()">ᚹ 전체 복사</button>
+          <button class="btn btn-ghost" style="font-size:10px;padding:6px 14px;" onclick="resetAll()">ᚢ 처음으로</button>
+        </div>
+      </div>
+      <div class="result-body" id="resultBody"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Save to project modal -->
+<div id="saveModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title">ᚦ 프로젝트에 저장</div>
+    <div class="modal-body">
+      <div id="projSelectWrap">
+        <label>프로젝트 선택</label>
+        <select id="projSelect" style="margin-bottom:12px;"></select>
+        <div id="noProjMsg" class="hidden" style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">
+          프로젝트가 없습니다. <a href="projects.html" style="color:var(--chain-dim);">프로젝트 만들기 →</a>
+        </div>
+      </div>
+      <label>제목</label>
+      <input type="text" id="entryTitle" placeholder="예: 물리 3단원 정리">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gleipnir" onclick="confirmSave()">저장</button>
+      <button class="btn btn-ghost"    onclick="closeSaveModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p class="footer-text">Gleipnir — Powered by Claude · 불가능한 것들로 짜인 사슬</p>
+  <div class="secret-runes">
+    <a href="fenrir.html"    class="secret-rune" tabindex="-1" aria-hidden="true">ᚠ</a>
+    <a href="settings.html"  class="secret-rune" tabindex="-1" aria-hidden="true">ᚢ</a>
+    <a href="projects.html"  class="secret-rune" tabindex="-1" aria-hidden="true">ᚦ</a>
+  </div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+let uploadedFiles = [];
+
+/* ── Drag & Drop ── */
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files]);
+});
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  addFiles([...e.target.files]);
+  e.target.value = '';
+});
+
+const FILE_ICONS = {
+  pdf: '📄', ppt: '📊', pptx: '📊', doc: '📝', docx: '📝', txt: '📃'
+};
+const ALLOWED = ['pdf','ppt','pptx','doc','docx','txt'];
+
+function addFiles(newFiles) {
+  for (const f of newFiles) {
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!ALLOWED.includes(ext)) { alert(`${f.name}: 지원하지 않는 형식입니다.`); continue; }
+    if (f.size > 20 * 1024 * 1024) { alert(`${f.name}: 20MB 초과 파일은 지원되지 않습니다.`); continue; }
+    if (uploadedFiles.find(u => u.name === f.name)) continue;
+    uploadedFiles.push(f);
+  }
+  renderFileList();
+  document.getElementById('analyzeBtn').disabled = uploadedFiles.length === 0;
+  if (uploadedFiles.length > 0) {
+    document.getElementById('step2').classList.add('active');
+  }
+}
+
+function removeFile(name) {
+  uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+  renderFileList();
+  document.getElementById('analyzeBtn').disabled = uploadedFiles.length === 0;
+  if (uploadedFiles.length === 0) document.getElementById('step2').classList.remove('active');
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  el.innerHTML = '';
+  uploadedFiles.forEach(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    const icon = FILE_ICONS[ext] || '📎';
+    const size = f.size > 1024*1024 ? (f.size/1024/1024).toFixed(1)+'MB' : (f.size/1024).toFixed(0)+'KB';
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.innerHTML = `
+      <span class="file-icon">${icon}</span>
+      <div class="file-meta">
+        <div class="file-name">${f.name}</div>
+        <div class="file-size">${size} · ${ext.toUpperCase()}</div>
+      </div>
+      <button class="file-remove" onclick="removeFile('${f.name.replace(/'/g,"\\'")}')">✕</button>
+    `;
+    el.appendChild(item);
+  });
+}
+
+/* ── Mode ── */
+function selectMode(card) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+}
+
+/* ── UI ── */
+function setProgress(p) { document.getElementById('progress').style.width = p + '%'; }
+function setStatus(msg, type='loading') {
+  const bar = document.getElementById('statusBar');
+  bar.classList.remove('hidden');
+  document.getElementById('statusDot').className = 'status-dot ' + type;
+  document.getElementById('statusText').textContent = msg;
+}
+
+/* ── Main analyze ── */
+async function analyze() {
+  const mode    = document.querySelector('.mode-card.selected')?.dataset.mode || 'summary';
+  const context = document.getElementById('context').value.trim();
+  const btn     = document.getElementById('analyzeBtn');
+
+  btn.disabled = true;
+  document.getElementById('result-section').classList.add('hidden');
+
+  try {
+    setProgress(10);
+    setStatus('파일 읽는 중...');
+
+    // Build message content blocks
+    const contentBlocks = [];
+
+    for (const file of uploadedFiles) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      setStatus(`${file.name} 읽는 중...`);
+
+      if (ext === 'pdf') {
+        // PDF → base64 → Claude document block
+        const b64 = await fileToBase64(file);
+        contentBlocks.push({
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: b64 },
+          title: file.name,
+        });
+      } else if (['txt'].includes(ext)) {
+        // TXT → plain text block
+        const text = await fileToText(file);
+        contentBlocks.push({
+          type: 'text',
+          text: `=== 파일: ${file.name} ===\n${text}`
+        });
+      } else {
+        // PPT / DOCX etc → try read as text, send as text block
+        // (binary files will be garbled but we still try)
+        try {
+          const text = await fileToText(file);
+          // Extract readable text only (filter out binary junk)
+          const readable = text.replace(/[^\x09\x0A\x0D\x20-\x7E가-힣ㄱ-ㅎ]/g, ' ').replace(/\s{3,}/g,' ').trim();
+          if (readable.length > 100) {
+            contentBlocks.push({ type:'text', text:`=== 파일: ${file.name} ===\n${readable.substring(0,15000)}` });
+          } else {
+            // Fallback: send as base64 document
+            const b64 = await fileToBase64(file);
+            contentBlocks.push({
+              type: 'document',
+              source: { type:'base64', media_type:'application/octet-stream', data:b64 },
+              title: file.name,
+            });
+          }
+        } catch {
+          contentBlocks.push({ type:'text', text:`[${file.name} — 읽기 실패]` });
+        }
+      }
+    }
+
+    setProgress(30);
+
+    // Build system prompt based on mode
+    const modePrompts = {
+      summary: `당신은 학습 자료를 핵심 위주로 간결하게 요약하는 전문가입니다.
+다음 형식으로 정리하세요:
+# 핵심 요약: [문서 제목]
+## 📌 핵심 포인트
+- 가장 중요한 내용 5~8개를 bullet로
+## 📚 주요 개념
+중요 개념/용어를 간단히 정의
+## 💡 결론 및 시사점
+전체 내용의 핵심 결론 2~3문장`,
+
+      detail: `당신은 학습 자료를 체계적으로 깊이있게 정리하는 전문가입니다.
+다음 형식으로 정리하세요:
+# 상세 정리: [문서 제목]
+## 개요
+## 목차 (섹션별 구조)
+## 섹션별 상세 내용 (각 섹션마다 핵심 내용, 세부 설명, 예시 포함)
+## 핵심 공식 / 표 / 데이터 (있는 경우)
+## 결론 및 시사점
+## 학습 포인트 (시험/발표에 중요한 내용)`,
+
+      research: `당신은 학습 자료를 분석하고 관련 배경지식까지 확장하여 깊이있게 정리하는 전문가입니다.
+다음 형식으로 정리하세요:
+# 심층 분석: [문서 제목]
+## 문서 핵심 요약
+## 주요 개념 심층 설명 (개념의 배경, 원리, 관련 이론 포함)
+## 관련 배경 지식 및 맥락
+## 실제 적용 사례 / 예시
+## 보충 학습 자료 및 참고 방향
+## 정리 및 학습 전략`
+    };
+
+    let system = modePrompts[mode];
+    if (context) system += `\n\n추가 지시사항: ${context}`;
+    system += '\n\n반드시 한국어로 정리하세요. 마크다운 형식으로 작성하세요.';
+
+    const fileNames = uploadedFiles.map(f => f.name).join(', ');
+    const userText = `다음 파일(들)을 분석하고 정리해주세요: ${fileNames}
+${context ? `\n요청 사항: ${context}` : ''}
+\n위 첨부된 자료들을 바탕으로 정리해주세요.`;
+
+    contentBlocks.push({ type: 'text', text: userText });
+
+    setProgress(50);
+
+    let resultText;
+    if (mode === 'research') {
+      setStatus('Claude가 자료를 분석하고 추가 조사 중... (시간이 걸릴 수 있어요)');
+      resultText = await callClaudeWithSearch(userText, system);
+    } else {
+      setStatus('Claude가 자료를 분석하는 중...');
+      resultText = await callClaude(contentBlocks, system);
+    }
+
+    setProgress(90);
+    setStatus('렌더링 중...');
+
+    // Render result as markdown
+    const modeLabels = { summary:'핵심 요약', detail:'상세 정리', research:'심층 조사' };
+    document.getElementById('resultTitle').textContent =
+      `${modeLabels[mode]} — ${uploadedFiles.map(f=>f.name).join(', ')}`;
+
+    renderMarkdown(resultText);
+
+    setProgress(100);
+    setStatus(`ᚠ 완료`, 'success');
+    incrementStat('docs');
+
+    // Mark steps done
+    ['step1','step2'].forEach((id,i) => {
+      const el = document.getElementById(id);
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.step-num').textContent = 'ᚠ';
+    });
+
+    document.getElementById('result-section').classList.remove('hidden');
+    document.getElementById('result-section').scrollIntoView({ behavior:'smooth', block:'start' });
+
+  } catch(err) {
+    setStatus('오류: ' + err.message, 'error');
+    console.error(err);
+  } finally { btn.disabled = false; }
+}
+
+/* ── Markdown renderer ── */
+function renderMarkdown(md) {
+  let html = md
+    // Headers
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,  '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,   '<h1>$1</h1>')
+    // Bold / Italic
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Blockquote
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // HR
+    .replace(/^---$/gm, '<hr>')
+    // Bullet lists
+    .replace(/^\s*[-*] (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // Links
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
+    // Line breaks
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
+  // Wrap orphan text in paragraphs
+  html = '<p>' + html + '</p>';
+  html = html.replace(/<p>(<h[123]>)/g, '$1').replace(/(<\/h[123]>)<\/p>/g, '$1');
+  html = html.replace(/<p>(<ul>)/g,'$1').replace(/(<\/ul>)<\/p>/g,'$1');
+  html = html.replace(/<p>(<blockquote>)/g,'$1').replace(/(<\/blockquote>)<\/p>/g,'$1');
+  html = html.replace(/<p>(<hr>)<\/p>/g,'$1');
+  html = html.replace(/<p><\/p>/g,'');
+
+  document.getElementById('resultBody').innerHTML = html;
+}
+
+/* ── Copy ── */
+function copyResult() {
+  const text = document.getElementById('resultBody').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'ᚠ 복사 완료';
+    setTimeout(() => btn.textContent = 'ᚹ 전체 복사', 2000);
+  });
+}
+
+/* ── Reset ── */
+function resetAll() {
+  uploadedFiles = [];
+  renderFileList();
+  document.getElementById('result-section').classList.add('hidden');
+  document.getElementById('resultBody').innerHTML = '';
+  document.getElementById('statusBar').classList.add('hidden');
+  document.getElementById('progress').style.width = '0%';
+  document.getElementById('context').value = '';
+  document.getElementById('analyzeBtn').disabled = true;
+
+  ['step1','step2'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('done','active');
+    el.querySelector('.step-num').textContent = ['I','II'][i];
+  });
+  document.getElementById('step1').classList.add('active');
+  document.getElementById('step2').classList.remove('active');
+}
+
+// Load default context from settings
+window.addEventListener('DOMContentLoaded', () => {
+  const ctx = getSetting('defaultContext','');
+  if (ctx) document.getElementById('context').value = ctx;
+});
+
+/* ── Save to project modal ── */
+let _lastResultText = '';
+let _lastResultTitle = '';
+
+function openSaveModal() {
+  const projects = getProjects();
+  const sel = document.getElementById('projSelect');
+  const noMsg = document.getElementById('noProjMsg');
+
+  sel.innerHTML = '';
+  if (!projects.length) {
+    sel.classList.add('hidden');
+    noMsg.classList.remove('hidden');
+  } else {
+    noMsg.classList.add('hidden');
+    sel.classList.remove('hidden');
+    projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.icon + ' ' + p.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  // Pre-fill title
+  document.getElementById('entryTitle').value = _lastResultTitle || document.getElementById('resultTitle').textContent;
+  document.getElementById('saveModal').classList.remove('hidden');
+}
+
+function closeSaveModal() {
+  document.getElementById('saveModal').classList.add('hidden');
+}
+
+function confirmSave() {
+  const projId = document.getElementById('projSelect').value;
+  const title  = document.getElementById('entryTitle').value.trim() || '정리 결과';
+  if (!projId) return;
+
+  const content = document.getElementById('resultBody').innerText;
+  const source  = uploadedFiles.map(f => f.name).join(', ');
+
+  saveEntryToProject(projId, {
+    type:    'gleipnir',
+    title,
+    content,
+    source,
+  });
+
+  closeSaveModal();
+
+  // Flash button
+  const btn = document.querySelector('[onclick="openSaveModal()"]');
+  if (btn) { btn.textContent = 'ᚠ 저장 완료'; setTimeout(() => btn.textContent = 'ᚦ 프로젝트 저장', 2000); }
+}
+
+// Close modal on backdrop click
+document.getElementById('saveModal').addEventListener('click', e => {
+  if (e.target.id === 'saveModal') closeSaveModal();
+});
+</script>
+</body>
+</html>

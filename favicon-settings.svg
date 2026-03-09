@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#07060a"/>
+  <!-- Anvil horn (left) -->
+  <path d="M4,14 Q8,12 10,15 L10,17 L4,17 Z" fill="#3a7a78"/>
+  <!-- Anvil top body -->
+  <rect x="8" y="12" width="18" height="7" rx="1.5" fill="#3a7a78"/>
+  <!-- Anvil top highlight -->
+  <rect x="8" y="12" width="18" height="2.5" rx="1.5" fill="#5ab8b4" opacity="0.5"/>
+  <!-- Anvil base -->
+  <rect x="10" y="19" width="14" height="3" rx="1" fill="#2a5a58"/>
+  <rect x="12" y="22" width="10" height="3" rx="1" fill="#1e4644"/>
+  <!-- Gleipnir glow tint -->
+  <rect x="8" y="12" width="18" height="7" rx="1.5" fill="none" stroke="#8dd4d0" stroke-width="0.6" opacity="0.5"/>
+</svg>
